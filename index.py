@@ -127,7 +127,6 @@ def open_csv_files(csv_files):
             print(f"Loaded {len(chunks)} chunks for file {file}")
         else:
             print(f"No chunks loaded for file {file}")
-
     return file_map
 
 #function to open text files
@@ -137,30 +136,50 @@ def open_text_files(text_files):
    for file in text_files:
        with open(file,'r') as f:
            for line in f:
-               #skiping empty lines
+               
                if not line or line.startswith('%'):
                    continue
                else:
                    if line.startswith("@attribute"):
-                       attributes.append(line.split(' ')[1])
+                       current_line=line.split(' ')[1]
+                       if current_line not in attributes:
+                           attributes.append(current_line)
+                     
                    else:
-                       lines_whitout_attribute.append(line)
+                       lines_whitout_attribute.append(line.strip())
                        
    return attributes,lines_whitout_attribute
 
 #handle csv files chuks from my map 
-def unify_chunks_in_one_dataframe(csv_file_map):            
+def unify_chunks_in_one_dataframe_csv(csv_file_map):            
     all_chunks=[]  #store all chunks of all files 
     for chunks in csv_file_map.values():
         all_chunks.extend(chunks)
     full_df=pd.concat(all_chunks,ignore_index=True)
+    full_df.to_csv("./Results/csv_result.csv",index=False)
     return full_df
+
+
+
+def create_csv_from_attributes_text(attributes, lines, csv_file=None, delimiter=','):
+    # Split each line into a list of values
+    rows = []
+    for line in lines:
+        row = line.split(delimiter)
+        rows.append(row)
+        
+    df = pd.DataFrame(rows, columns=attributes)
+    df.to_csv(csv_file, index=False, sep=delimiter)
+    
+    return df
 
 
 
 #this function will unify all the data in one data frame 
 def UnifyData(final_csv_dataframe,final_text_dataframe):
     final_dataframe= pd.concat([final_csv_dataframe,final_text_dataframe],ignore_index=True)
+    print("Generating your final data set please wait this proccess will take a while....^-^")
+    final_dataframe.to_csv("./Results/final_results.csv")
     return final_dataframe
 
 
@@ -186,19 +205,34 @@ def main():
 
      #opening and handling csv files (just for testing)
     csv_file_map = open_csv_files(csv_array_files)
-
     if csv_file_map:
-        full_df = unify_chunks_in_one_dataframe(csv_file_map)
+        full_df = unify_chunks_in_one_dataframe_csv(csv_file_map)
         print(full_df.columns)
         print(full_df)
     else:
         print("No CSV files loaded successfully.")
         
-    # opening and handling text files (just for testing)
-    #extracting attribute from my text data set
-    # text_attributes,text_lines_whitout_attribute =open_text_files(text_array_files)
-
+     #opening and handling text files (just for testing)
+    if text_array_files:
+        attributes,text_lines_whitout_attribute =open_text_files(text_array_files)
+        print(f'They are {len(attributes)} attributes')
+        print(f'They are {len(text_lines_whitout_attribute)} rows')
+        create_csv_from_attributes_text(attributes,text_lines_whitout_attribute,"./Results/results_text.csv")
+    else:
+        print("No text files loaded successfully.")
     
+    
+    #merging to All files into One
+    if csv_file_map and text_array_files:
+        final_csv_dataframe = pd.read_csv("./Results/csv_result.csv")
+        final_text_dataframe = pd.read_csv("./Results/results_text.csv")
+        final_dataframe = UnifyData(final_csv_dataframe,final_text_dataframe)
+        print(final_dataframe.columns)
+        print(final_dataframe)
+    else:
+        print("No CSV or text files loaded successfully.")
+
+    #mapping and handling the final data set (USE REVERCE MAP  YA ALI NI PRESQUE RIGLT KOLCH)
     
 
 #this shit from django that i never understoood but still doing it so nban 9atal
