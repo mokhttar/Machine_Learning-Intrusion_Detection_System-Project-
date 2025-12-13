@@ -82,16 +82,7 @@ def open_log_files(log_files):
 
 #function ==> entrainment data set ==> important features ===> [features] 
 def extract_final_features_fromDatasets():
-    pass
-
-
-
-#function to do data integration (unify data too)
-def integrate_data():
-    #Final Features that i want to extract 
-    final_features = [
-        
-    ]
+    final_features = []
     pass
 
 
@@ -115,6 +106,7 @@ def main():
     #extracting attribute from my text data set
     text_attributes,text_lines_whitout_attribute =open_text_files(text_array_files)
     
+
 
 
 #this shit from django that i never understoood but still doing it so nban 9atal
