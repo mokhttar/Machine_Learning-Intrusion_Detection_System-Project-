@@ -259,45 +259,100 @@ def preProcessing(final_file, dictionary_of_final_features):
     
 
 # this part i didnt code it i get it from gpt becuase when i did it solo i needed 25 terabite of ram so my shit can work fuck that
+# def encode_and_prepare_for_ml(df):
+#     if 'label' not in df.columns:
+#         raise ValueError("Label column not found")
+
+#     df = df[df['label'].notna()].copy()
+
+#     label_encoder = LabelEncoder()
+#     df['label'] = label_encoder.fit_transform(df['label'].astype(str))
+
+#     print("\nLabel Encoding:")
+#     for cls, idx in zip(label_encoder.classes_, range(len(label_encoder.classes_))):
+#         print(f"{cls} -> {idx}")
+
+  
+#     identifiers = ['src_ip', 'dst_ip', 'flow_id', 'timestamp']
+#     df = df.drop(columns=[c for c in identifiers if c in df.columns])
+
+#     if 'protocol' in df.columns:
+#         df['protocol'] = df['protocol'].astype(str)
+#         df['protocol'] = LabelEncoder().fit_transform(df['protocol'])
+
+
+#     feature_cols = df.drop(columns=['label']).columns
+
+#     for col in feature_cols:
+#         df[col] = pd.to_numeric(df[col], errors='coerce')
+
+
+#     df = df.replace([np.inf, -np.inf], np.nan)
+
+#     # Median is safer than zero for IDS
+#     df[feature_cols] = df[feature_cols].fillna(df[feature_cols].median())
+
+#     X = df.drop(columns=['label'])
+#     y = df['label']
+
+#     print(f"\nFinal dataset shape: X={X.shape}, y={y.shape}")
+
+#     return X, y
+
 def encode_and_prepare_for_ml(df):
     if 'label' not in df.columns:
         raise ValueError("Label column not found")
 
+    # Remove rows with missing labels
     df = df[df['label'].notna()].copy()
 
-    label_encoder = LabelEncoder()
-    df['label'] = label_encoder.fit_transform(df['label'].astype(str))
+    # Ensure label is integer
+    df['label'] = df['label'].astype(int)
 
-    print("\nLabel Encoding:")
-    for cls, idx in zip(label_encoder.classes_, range(len(label_encoder.classes_))):
-        print(f"{cls} -> {idx}")
+    # Convert multi-class to binary
+    # 0 = BENIGN, 1 = ATTACK
+    for i in range(len(df)):
+        if df.at[i, 'label'] == 0:
+            df.at[i, 'label'] = 0
+        else:
+            df.at[i, 'label'] = 1
 
-  
+    print("\nBinary Labels:")
+    print("0 -> BENIGN")
+    print("1 -> ATTACK")
+
+    # Drop identifiers
     identifiers = ['src_ip', 'dst_ip', 'flow_id', 'timestamp']
-    df = df.drop(columns=[c for c in identifiers if c in df.columns])
+    for col in identifiers:
+        if col in df.columns:
+            df.drop(columns=col, inplace=True)
 
+    # Encode protocol if exists
     if 'protocol' in df.columns:
         df['protocol'] = df['protocol'].astype(str)
-        df['protocol'] = LabelEncoder().fit_transform(df['protocol'])
+        le = LabelEncoder()
+        df['protocol'] = le.fit_transform(df['protocol'])
 
-
+    # Convert features to numeric
     feature_cols = df.drop(columns=['label']).columns
-
     for col in feature_cols:
         df[col] = pd.to_numeric(df[col], errors='coerce')
 
+    # Handle inf and NaN
+    df.replace([np.inf, -np.inf], np.nan, inplace=True)
+    for col in feature_cols:
+        df[col].fillna(df[col].median(), inplace=True)
 
-    df = df.replace([np.inf, -np.inf], np.nan)
-
-    # Median is safer than zero for IDS
-    df[feature_cols] = df[feature_cols].fillna(df[feature_cols].median())
-
+    # Split
     X = df.drop(columns=['label'])
     y = df['label']
 
     print(f"\nFinal dataset shape: X={X.shape}, y={y.shape}")
+    print("\nLabel distribution:")
+    print(y.value_counts())
 
     return X, y
+
 
 
 
